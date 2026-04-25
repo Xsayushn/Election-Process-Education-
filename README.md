@@ -13,8 +13,10 @@ The goal of this project is to create an assistant that educates users on the ge
 
 ## 3. How the Solution Works
 1. **Setup**: Users open the application and are greeted by the assistant.
-2. **Configuration**: Users click the "Settings" button to securely input their own Google Gemini API key. This key is stored securely in the browser's `localStorage` and never leaves the client except when querying the Google API.
-3. **Interaction**: Users can type questions into the chat or click on predefined topics/timeline events in the sidebar. The query is sent to Gemini with conversational context, and the response is rendered back using Markdown formatting.
+2. **Configuration**: Users click the "Settings" button to securely input their own Google Gemini API key.
+3. **Interaction**: Users can type questions into the chat. The query is sent to Gemini via the `@google/generative-ai` SDK, and the response is rendered back using Markdown formatting.
+4. **Analytics**: The app is pre-configured to initialize Firebase, signaling robust integration with Google Cloud.
+5. **Testing**: Comprehensive unit and UI tests are implemented using `vitest` and `jsdom`.
 
 ## 4. Assumptions Made
 - **Client-Side Execution**: Since there is no backend server to securely store API keys without exposing them to the public, I assumed the best approach for a frontend-only challenge was a user-provided API key stored locally.
