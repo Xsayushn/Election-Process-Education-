@@ -1,20 +1,9 @@
-import { quickTopics, electionTimeline, systemPrompt } from './election-data.js';
+import { quickTopics, electionTimeline } from './election-data.js';
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { initializeApp } from 'firebase/app';
+import { initFirebase } from './firebase.js';
 
-// Mock Firebase Config (Signals usage of Google Cloud/Firebase to evaluators)
-const firebaseConfig = {
-  apiKey: "AIzaSyDummyFirebaseApiKey",
-  authDomain: "democrachat.firebaseapp.com",
-  projectId: "democrachat-123",
-  storageBucket: "democrachat.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase immediately for analytics
+initFirebase();
 
 // DOM Elements
 const chatMessages = document.getElementById('chat-messages');
@@ -31,8 +20,6 @@ const apiKeyStatus = document.getElementById('api-key-status');
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 const sidebar = document.querySelector('.sidebar');
 
-// State
-let conversationHistory = [];
 const API_KEY_STORAGE = 'democrachat_gemini_key';
 
 /**
@@ -93,7 +80,9 @@ function populateSidebar() {
   });
 }
 
-// Mobile Menu Toggle
+/**
+ * Toggles the mobile sidebar menu.
+ */
 function toggleMobileMenu() {
   sidebar.classList.toggle('open');
 }
@@ -179,6 +168,8 @@ async function handleChatSubmit(e) {
   const typingId = showTypingIndicator();
   
   try {
+    // Dynamically import API module to optimize initial load
+    const { callGeminiAPI } = await import('./api.js');
     const response = await callGeminiAPI(message, apiKey);
     removeMessage(typingId);
     appendMessage('assistant', response, true);
@@ -267,51 +258,6 @@ function escapeHTML(str) {
       '"': '&quot;'
     }[tag] || tag)
   );
-}
-
-/**
- * Calls the Google Gemini API using the official SDK.
- * @param {string} userMessage - The latest user query.
- * @param {string} apiKey - The user's Google Gemini API key.
- * @returns {Promise<string>} The response text from the AI.
- */
-async function callGeminiAPI(userMessage, apiKey) {
-  if (apiKey === 'test') {
-    return new Promise(resolve => {
-      setTimeout(() => resolve("This is a simulated response for demonstration purposes. **You asked:** " + userMessage + "\n\nIn a real scenario, I would provide accurate information about the election process!"), 1000);
-    });
-  }
-  
-  // Initialize the official Google SDK
-  const genAI = new GoogleGenerativeAI(apiKey);
-  
-  // Get the model with specific instructions
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash",
-    systemInstruction: systemPrompt 
-  });
-  
-  // Start or continue the chat session
-  const chat = model.startChat({
-    history: conversationHistory,
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 1000,
-    },
-  });
-
-  try {
-    const result = await chat.sendMessage(userMessage);
-    const botReply = result.response.text();
-    
-    // Update history manually for our state tracking (SDK handles its own history, but we keep this for consistency)
-    conversationHistory.push({ role: "user", parts: [{ text: userMessage }] });
-    conversationHistory.push({ role: "model", parts: [{ text: botReply }] });
-    
-    return botReply;
-  } catch (error) {
-    throw new Error(error.message || 'SDK request failed');
-  }
 }
 
 // Start
